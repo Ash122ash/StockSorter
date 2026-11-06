@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockSentry AI — Advanced Technical Chart Analysis & Crash-Risk Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      --bg-base: #080c14;
+      --bg-surface: #0f172a;
+      --bg-card: #131c31;
+      --border-color: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-blue: #38bdf8;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-amber: #f59e0b;
+      --accent-purple: #a855f7;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-sans: 'Inter', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Topbar */
+    .topbar {
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+    }
+
+    .brand-shield {
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: #fff;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-left: 6px;
+      font-family: var(--font-mono);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: #1e293b;
+      border-color: #334155;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      border-color: #3b82f6;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+
+    .btn-streamlit {
+      background: linear-gradient(135deg, #be123c, #e11d48);
+      border-color: #f43f5e;
+      color: #fff;
+    }
+
+    /* Controls Strip */
+    .controls-strip {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .search-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+      max-width: 480px;
+    }
+
+    .search-input {
+      background: var(--bg-base);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      width: 100%;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--accent-blue); }
+
+    .quick-chips {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip:hover, .chip.active {
+      background: #2563eb;
+      border-color: #3b82f6;
+      color: #fff;
+    }
+
+    .select-dropdown {
+      background: var(--bg-base);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    /* Main Container */
+    .main-wrap {
+      padding: 1.25rem 1.5rem;
+      max-width: 1680px;
+      margin: 0 auto;
+    }
+
+    /* Hero Banner */
+    .ticker-hero {
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .hero-sym {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .hero-price {
+      font-family: var(--font-mono);
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin-left: 0.5rem;
+    }
+
+    .hero-change {
+      font-family: var(--font-mono);
+      font-size: 1.15rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+    .change-up { color: #10b981; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .change-down { color: #ef4444; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .hero-badges { display: flex; align-items: center; gap: 1rem; }
+    .intel-badge {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: right;
+      border: 1px solid transparent;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 0.85rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .metric-tile {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem 1.15rem;
+    }
+
+    .metric-caption {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-bottom: 4px;
+    }
+
+    .metric-number {
+      font-family: var(--font-mono);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .metric-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Tabs Component */
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1.25rem;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 10px 18px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: #fff; }
+    .tab-btn.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* Cards */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 0.85rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Analyst Reading Panel */
+    .reading-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .reading-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 14px 18px;
+    }
+
+    .reading-hdr {
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      color: #38bdf8;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .reading-text {
+      font-size: 0.90rem;
+      color: #f1f5f9;
+      line-height: 1.55;
+    }
+
+    .qa-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-left: 4px solid var(--accent-blue);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .qa-question { font-weight: 700; font-size: 0.95rem; color: #60a5fa; margin-bottom: 4px; }
+    .qa-answer { font-size: 0.9rem; color: #e2e8f0; line-height: 1.5; }
+
+    /* Tables */
+    .data-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+
+    .data-table th {
+      background: #1e293b;
+      padding: 10px 14px;
+      font-weight: 600;
+      color: #cbd5e1;
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+    }
+
+    .data-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #1a2234;
+      color: #e2e8f0;
+    }
+
+    .data-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    /* Loader */
+    #loader {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(8, 12, 20, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 999;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 4px solid #1e293b;
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <a href="/advanced" class="brand">
+      <div class="brand-shield">🛡️ StockSentry AI</div>
+      <div>
+        <span class="brand-title">Advanced Chart Analysis Workstation</span>
+        <span class="brand-subtitle">QUANTITATIVE STRUCTURE & PATTERN ENGINE</span>
+      </div>
+    </a>
+    <div class="nav-actions">
+      <button class="btn btn-streamlit" onclick="launchStreamlitStudio()">
+        <span>🚀 Open Streamlit Studio</span>
+      </button>
+      <a href="/" class="btn">
+        <span>← NSE Sorter</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Controls Strip -->
+  <div class="controls-strip">
+    <div class="search-group">
+      <input type="text" id="symbolInput" class="search-input" placeholder="Enter symbol (e.g. RELIANCE.NS, TCS.NS, AAPL)" value="RELIANCE.NS">
+      <select id="periodSelect" class="select-dropdown">
+        <option value="1y">1 Year</option>
+        <option value="2y" selected>2 Years</option>
+        <option value="6mo">6 Months</option>
+        <option value="3mo">3 Months</option>
+        <option value="1mo">1 Month</option>
+        <option value="max">Max History</option>
+      </select>
+      <button class="btn btn-primary" onclick="loadAnalysis(true)">Analyze</button>
+    </div>
+
+    <div class="quick-chips">
+      <span style="font-size:0.75rem; color:var(--text-muted); margin-right:4px;">Quick Select:</span>
+      <span class="chip active" onclick="setTicker('RELIANCE.NS')">RELIANCE.NS</span>
+      <span class="chip" onclick="setTicker('TCS.NS')">TCS.NS</span>
+      <span class="chip" onclick="setTicker('INFY.NS')">INFY.NS</span>
+      <span class="chip" onclick="setTicker('HDFCBANK.NS')">HDFCBANK.NS</span>
+      <span class="chip" onclick="setTicker('ICICIBANK.NS')">ICICIBANK.NS</span>
+      <span class="chip" onclick="setTicker('AAPL')">AAPL</span>
+      <span class="chip" onclick="setTicker('MSFT')">MSFT</span>
+    </div>
+  </div>
+
+  <!-- Main App Layout -->
+  <main class="main-wrap">
+    
+    <!-- Hero Ticker Banner -->
+    <div class="ticker-hero" id="heroBanner">
+      <div>
+        <div class="hero-sym">
+          <span id="heroSymbol">RELIANCE.NS</span>
+          <span class="hero-price" id="heroPrice">₹--.--</span>
+          <span class="hero-change change-up" id="heroChange">+0.00%</span>
+        </div>
+        <div style="font-size:0.82rem; color:var(--text-muted); margin-top:6px;" id="heroMeta">
+          Loading market session details...
+        </div>
+      </div>
+      <div class="hero-badges">
+        <div class="intel-badge" id="outlookBadge" style="background:rgba(59,130,246,0.15); border-color:#3b82f6; color:#60a5fa;">
+          <div style="font-size:0.7rem; text-transform:uppercase;">5-Day Forecast Outlook</div>
+          <div style="font-size:1.15rem; font-weight:700;" id="heroOutlook">ANALYZING...</div>
+        </div>
+        <div class="intel-badge" id="crashBadge" style="background:rgba(239,68,68,0.15); border-color:#ef4444; color:#ef4444;">
+          <div style="font-size:0.7rem; text-transform:uppercase;">Crash Risk Classification</div>
+          <div style="font-size:1.15rem; font-weight:700;" id="heroCrashRisk">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Metrics Grid -->
+    <div class="metrics-grid">
+      <div class="metric-tile">
+        <div class="metric-caption">5-Session Return</div>
+        <div class="metric-number" id="m5Session">--%</div>
+        <div class="metric-sub">Past 1 Week</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-caption">20-Session Return</div>
+        <div class="metric-number" id="m20Session">--%</div>
+        <div class="metric-sub">Past 1 Month</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-caption">Opening Gap</div>
+        <div class="metric-number" id="mOpeningGap">--%</div>
+        <div class="metric-sub">Open vs Prior Close</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-caption">RVOL (20D)</div>
+        <div class="metric-number" id="mRvol">--x</div>
+        <div class="metric-sub">Relative Volume</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-caption">Ann. Volatility</div>
+        <div class="metric-number" id="mVolatility">--%</div>
+        <div class="metric-sub">20-Day Realized</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-caption">Max Drawdown</div>
+        <div class="metric-number" id="mMaxDd" style="color:var(--accent-red);">--%</div>
+        <div class="metric-sub">Historical Peak</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-caption">Support Cushion</div>
+        <div class="metric-number" id="mSupportBuffer">--%</div>
+        <div class="metric-sub" id="mSupportLevel">Zone: --</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-caption">Resistance Gap</div>
+        <div class="metric-number" id="mResistDist">--%</div>
+        <div class="metric-sub" id="mResistLevel">Zone: --</div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('chartTab')">📈 Candlestick, S/R & Patterns</button>
+      <button class="tab-btn" onclick="switchTab('readingTab')">🧠 Technical Analyst's Reading</button>
+      <button class="tab-btn" onclick="switchTab('trendTab')">📐 Trendlines & Channels</button>
+      <button class="tab-btn" onclick="switchTab('patternsTab')">🏛️ Classical Chart Patterns</button>
+      <button class="tab-btn" onclick="switchTab('candlestickTab')">🕯️ Candlestick Patterns</button>
+      <button class="tab-btn" onclick="switchTab('scenariosTab')">🔮 5-Day Scenarios & Targets</button>
+      <button class="tab-btn" onclick="switchTab('srTab')">🧱 Support & Resistance Engine</button>
+      <button class="tab-btn" onclick="switchTab('qaTab')">❓ 11 Core Questions</button>
+      <button class="tab-btn" onclick="switchTab('backtestTab')">🧪 Signal Backtesting Matrix</button>
+      <button class="tab-btn" onclick="switchTab('newsTab')">📰 News Intelligence</button>
+      <button class="tab-btn" onclick="switchTab('dataTab')">📋 Daily OHLC Inspector</button>
+    </div>
+
+    <!-- TAB 1: CHART -->
+    <div id="chartTab" class="tab-pane active">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div class="card-title">Professional 3-Pane Technical Charting Engine</div>
+          <span style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono);">
+            Overlay: 9/21 EMA • 20/50 SMA • Bollinger Bands • S/R Liquidity Bands • Trendlines • Candlestick Markers • Future Scenarios
+          </span>
+        </div>
+        <div id="plotlyChartContainer" style="height:780px; width:100%;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 2: TECHNICAL ANALYST'S READING -->
+    <div id="readingTab" class="tab-pane">
+      <div class="card">
+        <div class="card-title">Technical Analyst's Reading — Automated Synthesis</div>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;" id="readingMethodology"></p>
+        
+        <div class="reading-grid">
+          <div class="reading-item" style="border-left:4px solid #38bdf8;">
+            <div class="reading-hdr">Current Trend & Structure</div>
+            <div class="reading-text" id="rTrend"></div>
+          </div>
+          <div class="reading-item" style="border-left:4px solid #a855f7;">
+            <div class="reading-hdr">Active Structural Pattern</div>
+            <div class="reading-text" id="rPattern"></div>
+          </div>
+          <div class="reading-item" style="border-left:4px solid #10b981;">
+            <div class="reading-hdr">Support Zone Liquidity Floor</div>
+            <div class="reading-text" id="rSupport"></div>
+          </div>
+          <div class="reading-item" style="border-left:4px solid #fbbf24;">
+            <div class="reading-hdr">Momentum & Indicator Divergence</div>
+            <div class="reading-text" id="rMomentum"></div>
+          </div>
+          <div class="reading-item" style="border-left:4px solid #ef4444;">
+            <div class="reading-hdr">Resistance Ceiling</div>
+            <div class="reading-text" id="rResistance"></div>
+          </div>
+          <div class="reading-item" style="border-left:4px solid #ec4899;">
+            <div class="reading-hdr">Volume Confirmation</div>
+            <div class="reading-text" id="rVolume"></div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1rem;">
+          <div class="reading-item" style="border-left:4px solid var(--accent-green);">
+            <div class="reading-hdr" style="color:var(--accent-green);">🎯 Potential Bullish Trigger</div>
+            <div class="reading-text" id="rBullTrigger"></div>
+          </div>
+          <div class="reading-item" style="border-left:4px solid var(--accent-red);">
+            <div class="reading-hdr" style="color:var(--accent-red);">🚨 Potential Bearish Trigger</div>
+            <div class="reading-text" id="rBearTrigger"></div>
+          </div>
+          <div class="reading-item" style="border-left:4px solid var(--accent-amber);">
+            <div class="reading-hdr" style="color:var(--accent-amber);">⚠️ Invalidation Conditions</div>
+            <div class="reading-text" id="rInvalidation"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: TRENDLINES & CHANNELS -->
+    <div id="trendTab" class="tab-pane">
+      <div class="card">
+        <div class="card-title">Fitted Trendlines & Geometric Channels</div>
+        <div class="data-table-wrap" style="margin-bottom:1.25rem;">
+          <table class="data-table" id="trendlinesTable">
+            <thead>
+              <tr>
+                <th>Trendline Type</th>
+                <th>Start Date</th>
+                <th>Start Price</th>
+                <th>End Date</th>
+                <th>Current Level</th>
+                <th>Projected 5D Level</th>
+                <th>Touches</th>
+                <th>Violations</th>
+                <th>Confidence</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="card-title">Trading Channel & Breakout Confirmation</div>
+        <div id="channelWrap" style="font-size:0.9rem; line-height:1.6; color:#cbd5e1;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: CLASSICAL CHART PATTERNS -->
+    <div id="patternsTab" class="tab-pane">
+      <div class="card">
+        <div class="card-title">Classical Multi-Bar Chart Pattern Geometry</div>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">
+          Algorithmic detection of Double Tops/Bottoms, Triangles, Flags, Wedges, and Necklines with technical measured moves.
+        </p>
+        <div id="chartPatternsList"></div>
+      </div>
+    </div>
+
+    <!-- TAB 5: CANDLESTICK PATTERNS -->
+    <div id="candlestickTab" class="tab-pane">
+      <div class="card">
+        <div class="card-title">Candlestick Pattern Recognition Engine</div>
+        <div class="data-table-wrap">
+          <table class="data-table" id="candlestickTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Pattern Name</th>
+                <th>Directional Bias</th>
+                <th>Price Level</th>
+                <th>Contextual Significance</th>
+                <th>Failure Risk</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: 5-DAY FORECAST SCENARIOS -->
+    <div id="scenariosTab" class="tab-pane">
+      <div class="card">
+        <div class="card-title">Forward 5-Trading-Session Price Scenarios (P90 / P50 / P10)</div>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">
+          Plotly chart plots forward trajectories strictly into future sessions with dashed lines. Never connected as observed candles.
+        </p>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+          <div class="metric-tile" style="border-left:4px solid var(--accent-green);">
+            <div class="metric-caption">Bullish Expansion (P90)</div>
+            <div class="metric-number" id="scenP90" style="color:var(--accent-green);">--%</div>
+            <div class="metric-sub" id="scenP90Price">Target: --</div>
+          </div>
+          <div class="metric-tile" style="border-left:4px solid var(--accent-amber);">
+            <div class="metric-caption">Base Equilibrium (P50 Median)</div>
+            <div class="metric-number" id="scenP50">--%</div>
+            <div class="metric-sub" id="scenP50Price">Target: --</div>
+          </div>
+          <div class="metric-tile" style="border-left:4px solid var(--accent-red);">
+            <div class="metric-caption">Bearish Downside Stress (P10)</div>
+            <div class="metric-number" id="scenP10" style="color:var(--accent-red);">--%</div>
+            <div class="metric-sub" id="scenP10Price">Target: --</div>
+          </div>
+        </div>
+
+        <div class="data-table-wrap">
+          <table class="data-table" id="scenariosTable">
+            <thead>
+              <tr>
+                <th>Future Trading Session</th>
+                <th>Bullish Path (P90)</th>
+                <th>Base Path (P50)</th>
+                <th>Bearish Path (P10)</th>
+                <th>Upper Uncertainty Cone</th>
+                <th>Lower Uncertainty Cone</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 7: SUPPORT & RESISTANCE -->
+    <div id="srTab" class="tab-pane">
+      <div class="card">
+        <div class="card-title">Confirmed Support Liquidity Zones</div>
+        <div class="data-table-wrap" style="margin-bottom:1.25rem;">
+          <table class="data-table" id="supportTable">
+            <thead>
+              <tr>
+                <th>Zone Boundaries</th>
+                <th>Tests</th>
+                <th>Avg Rebound</th>
+                <th>Last Interaction</th>
+                <th>Distance to Price</th>
+                <th>Volume Signature</th>
+                <th>Evidence Strength</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="card-title">Overhead Resistance Supply Zones</div>
+        <div class="data-table-wrap">
+          <table class="data-table" id="resistTable">
+            <thead>
+              <tr>
+                <th>Zone Boundaries</th>
+                <th>Tests</th>
+                <th>Avg Rejection</th>
+                <th>Last Interaction</th>
+                <th>Distance to Price</th>
+                <th>Volume Signature</th>
+                <th>Evidence Strength</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 8: 11 CORE QUESTIONS -->
+    <div id="qaTab" class="tab-pane">
+      <div class="card">
+        <div class="card-title">Executive Synthesis — The 11 Core Financial Market Answers</div>
+        <div id="qaContainer"></div>
+      </div>
+    </div>
+
+    <!-- TAB 9: SIGNAL BACKTESTING -->
+    <div id="backtestTab" class="tab-pane">
+      <div class="card">
+        <div class="card-title">Historical Signal Validation & Empirical Hit Rates</div>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;" id="backtestMethodology"></p>
+        <div class="data-table-wrap">
+          <table class="data-table" id="signalBacktestTable">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Signal / Pattern Name</th>
+                <th>Sample Size</th>
+                <th>5-Day Hit Rate %</th>
+                <th>Avg Subsequent 5D Move %</th>
+                <th>Statistical Significance</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 10: NEWS INTELLIGENCE -->
+    <div id="newsTab" class="tab-pane">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+          <div class="card-title">Recent Company Announcements & Event Intelligence</div>
+          <div style="font-size:0.85rem; font-family:var(--font-mono);" id="newsSentimentBadge">Sentiment: --</div>
+        </div>
+        <div id="newsList"></div>
+      </div>
+    </div>
+
+    <!-- TAB 11: DAILY OHLC -->
+    <div id="dataTab" class="tab-pane">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+          <div class="card-title">Historical Daily OHLCV Records</div>
+          <button class="btn" onclick="exportOhlcCSV()">Download CSV</button>
+        </div>
+        <div class="data-table-wrap">
+          <table class="data-table" id="ohlcTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Open</th>
+                <th>High</th>
+                <th>Low</th>
+                <th>Close</th>
+                <th>Volume</th>
+                <th>Daily Return %</th>
+                <th>Opening Gap %</th>
+                <th>Range %</th>
+                <th>RVOL</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Fullscreen Loading Overlay -->
+  <div id="loader">
+    <div class="spinner"></div>
+    <div style="font-size:1.1rem; font-weight:600; color:#fff;" id="loaderText">Running StockSentry AI Advanced Chart Analysis Suite...</div>
+    <div style="font-size:0.85rem; color:var(--text-muted);">Detecting swing extrema, fitting trendlines, scanning candlestick geometry, and plotting future scenarios.</div>
+  </div>
+
+  <script>
+    let currentAnalysisData = null;
+
+    function setTicker(sym) {
+      document.getElementById('symbolInput').value = sym;
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      const activeChip = Array.from(document.querySelectorAll('.chip')).find(el => el.textContent === sym);
+      if (activeChip) activeChip.classList.add('active');
+      loadAnalysis();
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+      
+      if (tabId === 'chartTab' && currentAnalysisData) {
+        setTimeout(renderPlotlyChart, 50);
+      }
+    }
+
+    async function launchStreamlitStudio() {
+      try {
+        const resp = await fetch('/api/stocksentry/launch_streamlit');
+        const data = await resp.json();
+        if (data.ok && data.url) {
+          window.open(data.url, '_blank');
+        } else {
+          alert('Could not start Streamlit: ' + (data.error || 'Unknown error'));
+        }
+      } catch (e) {
+        alert('Streamlit error: ' + e);
+      }
+    }
+
+    async function loadAnalysis(forceRefresh = false) {
+      const symbol = document.getElementById('symbolInput').value.trim();
+      const period = document.getElementById('periodSelect').value;
+      if (!symbol) return;
+
+      const loader = document.getElementById('loader');
+      loader.style.display = 'flex';
+
+      try {
+        const url = `/api/stocksentry/analyze?symbol=${encodeURIComponent(symbol)}&period=${period}&refresh=${forceRefresh ? 1 : 0}`;
+        const resp = await fetch(url);
+        const res = await resp.json();
+
+        if (!res.ok) {
+          alert(`Analysis Error: ${res.error || 'Failed to fetch'}`);
+          loader.style.display = 'none';
+          return;
+        }
+
+        currentAnalysisData = res.data;
+        renderDashboard(res.data);
+      } catch (err) {
+        alert('Server communication failed: ' + err);
+      } finally {
+        loader.style.display = 'none';
+      }
+    }
+
+    function renderDashboard(d) {
+      const meta = d.metadata;
+      const ohlc = d.ohlc_metrics;
+      const sr = d.support_resistance;
+      const forecast = d.forecasting;
+      const crash = d.crash_risk;
+      const news = d.news_intelligence;
+      const trend = d.trendline_analysis;
+      const patterns = d.chart_patterns;
+      const candles = d.candlestick_patterns;
+      const scenarios = d.forecast_scenarios;
+      const reading = d.technical_analyst_reading;
+      const backtest = d.signal_backtesting;
+      const curr = meta.currency === 'INR' ? '₹' : '$';
+
+      // Hero
+      document.getElementById('heroSymbol').textContent = meta.symbol;
+      document.getElementById('heroPrice').textContent = `${curr}${ohlc.latest_close.toFixed(2)}`;
+      
+      const changeEl = document.getElementById('heroChange');
+      const ret = ohlc.daily_return_pct;
+      changeEl.textContent = `${ret >= 0 ? '+' : ''}${ret.toFixed(2)}% (${ohlc.daily_change_abs >= 0 ? '+' : ''}${ohlc.daily_change_abs.toFixed(2)})`;
+      changeEl.className = ret >= 0 ? 'hero-change change-up' : 'hero-change change-down';
+
+      document.getElementById('heroMeta').innerHTML = `
+        Latest Session: <b>${meta.latest_session}</b> • Trend: <b>${trend.current_trend}</b> • Structure: <b>${trend.market_structure}</b> • ${meta.data_disclaimer}
+      `;
+
+      // Outlook Badge
+      const outlook = forecast.outlook_code || 'NEUTRAL';
+      const oEl = document.getElementById('heroOutlook');
+      oEl.textContent = forecast.outlook || 'Neutral';
+      const oBadge = document.getElementById('outlookBadge');
+      if (outlook === 'BULLISH') {
+        oBadge.style.borderColor = '#10b981'; oBadge.style.color = '#10b981';
+      } else if (outlook === 'BEARISH') {
+        oBadge.style.borderColor = '#ef4444'; oBadge.style.color = '#ef4444';
+      } else {
+        oBadge.style.borderColor = '#f59e0b'; oBadge.style.color = '#f59e0b';
+      }
+
+      // Crash Risk Badge
+      const cEl = document.getElementById('heroCrashRisk');
+      cEl.textContent = `${crash.risk_category} (${crash.risk_score_100}/100)`;
+      const cBadge = document.getElementById('crashBadge');
+      cBadge.style.borderColor = crash.risk_color;
+      cBadge.style.color = crash.risk_color;
+
+      // Metrics Grid
+      document.getElementById('m5Session').textContent = (ohlc.five_session_return_pct !== null ? `${ohlc.five_session_return_pct > 0 ? '+' : ''}${ohlc.five_session_return_pct}%` : 'N/A');
+      document.getElementById('m5Session').style.color = (ohlc.five_session_return_pct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)');
+      
+      document.getElementById('m20Session').textContent = (ohlc.twenty_session_return_pct !== null ? `${ohlc.twenty_session_return_pct > 0 ? '+' : ''}${ohlc.twenty_session_return_pct}%` : 'N/A');
+      document.getElementById('m20Session').style.color = (ohlc.twenty_session_return_pct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)');
+
+      document.getElementById('mOpeningGap').textContent = `${ohlc.opening_gap_pct > 0 ? '+' : ''}${ohlc.opening_gap_pct}%`;
+      document.getElementById('mRvol').textContent = `${ohlc.relative_volume}x`;
+      document.getElementById('mVolatility').textContent = `${ohlc.historical_annualized_volatility_pct}%`;
+      document.getElementById('mMaxDd').textContent = `${ohlc.maximum_drawdown_pct}%`;
+
+      const pSup = sr.breakdown_risk_summary || {};
+      document.getElementById('mSupportBuffer').textContent = `${pSup.distance_to_primary_support_pct || 'N/A'}%`;
+      document.getElementById('mSupportLevel').textContent = `Zone: ${pSup.primary_support_zone || 'None'}`;
+
+      const rList = sr.resistance_zones || [];
+      if (rList.length > 0) {
+        document.getElementById('mResistDist').textContent = `${rList[0].distance_pct}%`;
+        document.getElementById('mResistLevel').textContent = `Zone: ${curr}${rList[0].lower_boundary} - ${curr}${rList[0].upper_boundary}`;
+      } else {
+        document.getElementById('mResistDist').textContent = 'None';
+        document.getElementById('mResistLevel').textContent = 'Open Sky';
+      }
+
+      // Technical Analyst Reading Tab
+      document.getElementById('readingMethodology').textContent = reading.methodology_declaration;
+      document.getElementById('rTrend').textContent = reading.current_trend_analysis;
+      document.getElementById('rPattern').textContent = reading.structural_pattern_analysis;
+      document.getElementById('rSupport').textContent = reading.support_zone_analysis;
+      document.getElementById('rResistance').textContent = reading.resistance_zone_analysis;
+      document.getElementById('rMomentum').textContent = reading.momentum_and_divergence_analysis;
+      document.getElementById('rVolume').textContent = reading.volume_confirmation_analysis;
+      document.getElementById('rBullTrigger').textContent = reading.potential_bullish_trigger;
+      document.getElementById('rBearTrigger').textContent = reading.potential_bearish_trigger;
+      document.getElementById('rInvalidation').textContent = reading.forecast_invalidation_conditions.join('; ');
+
+      // Trendlines Tab
+      const tlTbody = document.querySelector('#trendlinesTable tbody');
+      tlTbody.innerHTML = '';
+      (trend.trendlines || []).forEach(tl => {
+        tlTbody.innerHTML += `
+          <tr>
+            <td><b>${tl.type}</b></td>
+            <td>${tl.start_date}</td>
+            <td>${curr}${tl.start_price}</td>
+            <td>${tl.end_date}</td>
+            <td>${curr}${tl.end_price}</td>
+            <td><b style="color:var(--accent-blue);">${curr}${tl.projected_5d_price}</b></td>
+            <td>${tl.touches}</td>
+            <td>${tl.violations}</td>
+            <td>${tl.confidence}</td>
+          </tr>
+        `;
+      });
+
+      const chWrap = document.getElementById('channelWrap');
+      if (trend.channel) {
+        chWrap.innerHTML = `
+          <div style="padding:10px; background:#131c31; border-radius:6px; margin-bottom:10px;">
+            <b>${trend.channel.type}:</b> ${trend.channel.interpretation} (Height: ${trend.channel.channel_height_pct}%)
+          </div>
+        `;
+      } else {
+        chWrap.innerHTML = '<div>No parallel channel active. Price action governed by horizontal liquidity zones.</div>';
+      }
+
+      if (trend.breakouts && trend.breakouts.length > 0) {
+        trend.breakouts.forEach(bo => {
+          chWrap.innerHTML += `
+            <div style="padding:10px; background:rgba(255,255,255,0.03); border-left:4px solid ${bo.type.includes('Breakout') ? '#10b981' : '#ef4444'}; border-radius:4px; margin-top:8px;">
+              <b>${bo.status}:</b> ${bo.interpretation}
+            </div>
+          `;
+        });
+      }
+
+      // Classical Chart Patterns Tab
+      const cpList = document.getElementById('chartPatternsList');
+      cpList.innerHTML = '';
+      if (patterns && patterns.length > 0) {
+        patterns.forEach(cp => {
+          const pColor = cp.bias.includes('Bullish') ? '#10b981' : (cp.bias.includes('Bearish') ? '#ef4444' : '#f59e0b');
+          cpList.innerHTML += `
+            <div style="background:#131c31; border:1px solid #1e293b; border-radius:8px; padding:16px; margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:1.1rem; font-weight:700;">🏛️ ${cp.pattern}</span>
+                <span style="color:${pColor}; font-weight:600; font-size:0.85rem; background:rgba(255,255,255,0.06); padding:4px 10px; border-radius:4px;">
+                  ${cp.bias} • Confidence: ${cp.confidence_score}
+                </span>
+              </div>
+              <div style="font-size:0.85rem; color:#94a3b8; margin:6px 0;">Duration: ${cp.start_date} to ${cp.end_date}</div>
+              <div style="font-size:0.9rem; color:#e2e8f0; margin:6px 0;">
+                <b>Confirmation:</b> ${cp.confirmation_condition}<br>
+                <b>Invalidation:</b> ${cp.invalidation_condition}
+              </div>
+              ${cp.measured_move_target ? `<div style="font-family:'JetBrains Mono'; font-size:0.88rem; color:#38bdf8; margin-top:6px;">Measured-Move Target: <b>${curr}${cp.measured_move_target}</b></div>` : ''}
+              <div style="font-size:0.75rem; color:#64748b; margin-top:4px;">${cp.historical_hit_rate || ''}</div>
+            </div>
+          `;
+        });
+      } else {
+        cpList.innerHTML = '<div style="color:var(--text-muted); font-size:0.9rem;">No mature classical chart patterns active at present. Market is respecting horizontal order-flow bounds.</div>';
+      }
+
+      // Candlestick Patterns Tab
+      const csTbody = document.querySelector('#candlestickTable tbody');
+      csTbody.innerHTML = '';
+      (candles || []).slice(-20).reverse().forEach(cp => {
+        csTbody.innerHTML += `
+          <tr>
+            <td>${cp.date}</td>
+            <td><b>${cp.pattern}</b></td>
+            <td><span style="color:${cp.bias.includes('Bullish') ? '#10b981' : '#ef4444'};">${cp.bias}</span></td>
+            <td>${curr}${cp.price}</td>
+            <td>${cp.significance}</td>
+            <td style="font-size:0.78rem; color:#94a3b8;">${cp.failure_risk}</td>
+          </tr>
+        `;
+      });
+
+      // 5-Day Forecast Scenarios Tab
+      const bullScen = scenarios.bullish_scenario;
+      const baseScen = scenarios.base_scenario;
+      const bearScen = scenarios.bearish_scenario;
+
+      document.getElementById('scenP90').textContent = `+${bullScen.target_return_pct}%`;
+      document.getElementById('scenP90Price').textContent = `Target: ${curr}${bullScen.target_price}`;
+      document.getElementById('scenP50').textContent = `${baseScen.target_return_pct}%`;
+      document.getElementById('scenP50Price').textContent = `Target: ${curr}${baseScen.target_price}`;
+      document.getElementById('scenP10').textContent = `${bearScen.target_return_pct}%`;
+      document.getElementById('scenP10Price').textContent = `Target: ${curr}${bearScen.target_price}`;
+
+      const scTbody = document.querySelector('#scenariosTable tbody');
+      scTbody.innerHTML = '';
+      (scenarios.future_dates || []).forEach((dStr, idx) => {
+        scTbody.innerHTML += `
+          <tr>
+            <td>Day ${idx + 1} (${dStr})</td>
+            <td style="color:#10b981;"><b>${curr}${bullScen.trajectory[idx]}</b></td>
+            <td style="color:#f59e0b;"><b>${curr}${baseScen.trajectory[idx]}</b></td>
+            <td style="color:#ef4444;"><b>${curr}${bearScen.trajectory[idx]}</b></td>
+            <td>${curr}${scenarios.uncertainty_cone.upper_band[idx]}</td>
+            <td>${curr}${scenarios.uncertainty_cone.lower_band[idx]}</td>
+          </tr>
+        `;
+      });
+
+      // Support & Resistance Tab
+      const sTbody = document.querySelector('#supportTable tbody');
+      sTbody.innerHTML = '';
+      (sr.support_zones || []).forEach(z => {
+        sTbody.innerHTML += `
+          <tr>
+            <td><b>${curr}${z.lower_boundary} – ${curr}${z.upper_boundary}</b></td>
+            <td>${z.meaningful_tests} touches</td>
+            <td><span style="color:var(--accent-green);">+${z.average_reaction_pct}%</span></td>
+            <td>${z.recent_interaction_date} (${z.days_since_interaction}d ago)</td>
+            <td>${z.distance_description}</td>
+            <td>${z.volume_evidence}</td>
+            <td><b>${z.confidence_label}</b></td>
+          </tr>
+        `;
+      });
+
+      const rTbody = document.querySelector('#resistTable tbody');
+      rTbody.innerHTML = '';
+      (sr.resistance_zones || []).forEach(z => {
+        rTbody.innerHTML += `
+          <tr>
+            <td><b>${curr}${z.lower_boundary} – ${curr}${z.upper_boundary}</b></td>
+            <td>${z.meaningful_tests} touches</td>
+            <td><span style="color:var(--accent-red);">-${z.average_reaction_pct}%</span></td>
+            <td>${z.recent_interaction_date} (${z.days_since_interaction}d ago)</td>
+            <td>${z.distance_description}</td>
+            <td>${z.volume_evidence}</td>
+            <td><b>${z.confidence_label}</b></td>
+          </tr>
+        `;
+      });
+
+      // 11 Q&A Tab
+      const qaContainer = document.getElementById('qaContainer');
+      qaContainer.innerHTML = '';
+      for (const [key, item] of Object.entries(d.questions_and_answers)) {
+        qaContainer.innerHTML += `
+          <div class="qa-card">
+            <div class="qa-question">${item.question}</div>
+            <div class="qa-answer">${item.answer}</div>
+          </div>
+        `;
+      }
+
+      // Signal Backtesting Tab
+      document.getElementById('backtestMethodology').textContent = backtest.methodology || '';
+      const bTbody = document.querySelector('#signalBacktestTable tbody');
+      bTbody.innerHTML = '';
+      (backtest.signal_summaries || []).forEach(sig => {
+        bTbody.innerHTML += `
+          <tr>
+            <td>${sig.category}</td>
+            <td><b>${sig.signal_name}</b></td>
+            <td>${sig.sample_size} signals</td>
+            <td><b style="color:${sig.hit_rate_pct >= 50 ? '#10b981' : '#ef4444'};">${sig.hit_rate_pct}%</b></td>
+            <td>${sig.avg_subsequent_5d_move_pct > 0 ? '+' : ''}${sig.avg_subsequent_5d_move_pct}%</td>
+            <td>${sig.statistical_significance}</td>
+          </tr>
+        `;
+      });
+
+      // News Tab
+      document.getElementById('newsSentimentBadge').textContent = `Aggregate: ${news.aggregate_sentiment} (${news.aggregate_score})`;
+      const newsList = document.getElementById('newsList');
+      newsList.innerHTML = '';
+      (news.articles || []).forEach(art => {
+        const sColor = art.sentiment_label === 'Positive' ? '#10b981' : (art.sentiment_label === 'Negative' ? '#ef4444' : '#f59e0b');
+        newsList.innerHTML += `
+          <div style="background:#131c31; border:1px solid #1e293b; border-radius:6px; padding:12px 16px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span style="font-size:0.75rem; color:#94a3b8; font-family:'JetBrains Mono';">${art.publisher} • ${art.publication_time}</span>
+              <span style="font-size:0.75rem; background:rgba(255,255,255,0.06); padding:2px 8px; border-radius:4px; color:${sColor}; font-weight:600;">
+                ${art.event_category} | ${art.sentiment_label} (${art.sentiment_score})
+              </span>
+            </div>
+            <div style="font-size:0.95rem; font-weight:600; margin:6px 0;">
+              <a href="${art.link}" target="_blank" style="color:#60a5fa; text-decoration:none;">${art.headline} ↗</a>
+            </div>
+            <div style="font-size:0.83rem; color:#cbd5e1; font-style:italic;">
+              💡 Impact: ${art.explanation}
+            </div>
+          </div>
+        `;
+      });
+
+      // OHLC Tab
+      const oTbody = document.querySelector('#ohlcTable tbody');
+      oTbody.innerHTML = '';
+      (ohlc.recent_ohlc_table || []).forEach(row => {
+        oTbody.innerHTML += `
+          <tr>
+            <td>${row.date}</td>
+            <td>${curr}${row.open.toFixed(2)}</td>
+            <td>${curr}${row.high.toFixed(2)}</td>
+            <td>${curr}${row.low.toFixed(2)}</td>
+            <td>${curr}${row.close.toFixed(2)}</td>
+            <td>${row.volume.toLocaleString()}</td>
+            <td style="color:${row.daily_return_pct >= 0 ? '#10b981' : '#ef4444'};">${row.daily_return_pct >= 0 ? '+' : ''}${row.daily_return_pct}%</td>
+            <td>${row.opening_gap_pct}%</td>
+            <td>${row.intraday_range_pct}%</td>
+            <td>${row.rvol}x</td>
+          </tr>
+        `;
+      });
+
+      // Render Plotly Chart
+      renderPlotlyChart();
+    }
+
+    function renderPlotlyChart() {
+      if (!currentAnalysisData || !currentAnalysisData.chart_data) return;
+      const cdata = currentAnalysisData.chart_data;
+      const sr = currentAnalysisData.support_resistance;
+      const trend = currentAnalysisData.trendline_analysis;
+      const candles = currentAnalysisData.candlestick_patterns;
+      const scenarios = currentAnalysisData.forecast_scenarios;
+
+      const dates = cdata.map(d => d.date);
+      const opens = cdata.map(d => d.open);
+      const highs = cdata.map(d => d.high);
+      const lows = cdata.map(d => d.low);
+      const closes = cdata.map(d => d.close);
+      const volumes = cdata.map(d => d.volume);
+      const ema9 = cdata.map(d => d.ema9);
+      const ema21 = cdata.map(d => d.ema21);
+      const sma20 = cdata.map(d => d.sma20);
+      const sma50 = cdata.map(d => d.sma50);
+      const bbUpper = cdata.map(d => d.bb_upper);
+      const bbLower = cdata.map(d => d.bb_lower);
+      const rsi14 = cdata.map(d => d.rsi14);
+
+      const traces = [
+        // Candlesticks
+        {
+          type: 'candlestick',
+          x: dates,
+          open: opens, high: highs, low: lows, close: closes,
+          increasing: { line: { color: '#10b981' }, fillcolor: '#10b981' },
+          decreasing: { line: { color: '#ef4444' }, fillcolor: '#ef4444' },
+          name: 'OHLC',
+          yaxis: 'y1'
+        },
+        // Moving Averages
+        { type: 'scatter', mode: 'lines', x: dates, y: ema9, line: { color: '#38bdf8', width: 1.2 }, name: 'EMA 9', yaxis: 'y1' },
+        { type: 'scatter', mode: 'lines', x: dates, y: ema21, line: { color: '#fbbf24', width: 1.2 }, name: 'EMA 21', yaxis: 'y1' },
+        { type: 'scatter', mode: 'lines', x: dates, y: sma20, line: { color: '#60a5fa', width: 1.0, dash: 'dot' }, name: 'SMA 20', yaxis: 'y1' },
+        { type: 'scatter', mode: 'lines', x: dates, y: sma50, line: { color: '#a855f7', width: 1.5 }, name: 'SMA 50', yaxis: 'y1' },
+        // Bollinger Bands
+        { type: 'scatter', mode: 'lines', x: dates, y: bbUpper, line: { color: 'rgba(148, 163, 184, 0.4)', dash: 'dash', width: 0.9 }, name: 'BB Upper', hoverinfo: 'skip', yaxis: 'y1' },
+        { type: 'scatter', mode: 'lines', x: dates, y: bbLower, line: { color: 'rgba(148, 163, 184, 0.4)', dash: 'dash', width: 0.9 }, fill: 'tonexty', fillcolor: 'rgba(148, 163, 184, 0.05)', name: 'BB Lower', hoverinfo: 'skip', yaxis: 'y1' }
+      ];
+
+      // Add Trendlines
+      (trend.trendlines || []).forEach(tl => {
+        traces.push({
+          type: 'scatter',
+          mode: 'lines',
+          x: [tl.start_date, tl.end_date],
+          y: [tl.start_price, tl.end_price],
+          line: { color: tl.is_support ? '#38bdf8' : '#f43f5e', width: 1.8 },
+          name: tl.type,
+          yaxis: 'y1'
+        });
+      });
+
+      // Add Future Forecast Scenarios
+      if (scenarios && scenarios.future_dates) {
+        const futDates = [scenarios.anchor_date].concat(scenarios.future_dates);
+        const bullPath = [scenarios.anchor_price].concat(scenarios.bullish_scenario.trajectory);
+        const basePath = [scenarios.anchor_price].concat(scenarios.base_scenario.trajectory);
+        const bearPath = [scenarios.anchor_price].concat(scenarios.bearish_scenario.trajectory);
+        const upperCone = [scenarios.anchor_price].concat(scenarios.uncertainty_cone.upper_band);
+        const lowerCone = [scenarios.anchor_price].concat(scenarios.uncertainty_cone.lower_band);
+
+        traces.push(
+          { type: 'scatter', mode: 'lines+markers', x: futDates, y: bullPath, line: { color: '#10b981', dash: 'dash', width: 2.0 }, name: 'Forecast Bullish P90', yaxis: 'y1' },
+          { type: 'scatter', mode: 'lines+markers', x: futDates, y: basePath, line: { color: '#f59e0b', dash: 'dot', width: 2.0 }, name: 'Forecast Base P50', yaxis: 'y1' },
+          { type: 'scatter', mode: 'lines+markers', x: futDates, y: bearPath, line: { color: '#ef4444', dash: 'dash', width: 2.0 }, name: 'Forecast Bearish P10', yaxis: 'y1' },
+          { type: 'scatter', mode: 'lines', x: futDates, y: upperCone, line: { color: 'rgba(56, 189, 248, 0.2)', width: 0 }, hoverinfo: 'skip', showlegend: false, yaxis: 'y1' },
+          { type: 'scatter', mode: 'lines', x: futDates, y: lowerCone, line: { color: 'rgba(56, 189, 248, 0.2)', width: 0 }, fill: 'tonexty', fillcolor: 'rgba(56, 189, 248, 0.08)', name: 'Forecast Uncertainty Cone', hoverinfo: 'skip', yaxis: 'y1' }
+        );
+      }
+
+      // Add Volume Bars (Row 2 / Y2)
+      const volColors = closes.map((c, idx) => c >= opens[idx] ? '#10b981' : '#ef4444');
+      traces.push({
+        type: 'bar',
+        x: dates,
+        y: volumes,
+        marker: { color: volColors },
+        name: 'Volume',
+        yaxis: 'y2'
+      });
+
+      // Add RSI (Row 3 / Y3)
+      traces.push({
+        type: 'scatter',
+        mode: 'lines',
+        x: dates,
+        y: rsi14,
+        line: { color: '#f43f5e', width: 1.5 },
+        name: 'RSI (14)',
+        yaxis: 'y3'
+      });
+
+      // Support & Resistance Shaded Rectangles
+      const shapes = [];
+      (sr.support_zones || []).slice(0, 3).forEach(z => {
+        shapes.push({
+          type: 'rect', xref: 'paper', yref: 'y1',
+          x0: 0, x1: 1,
+          y0: z.lower_boundary, y1: z.upper_boundary,
+          fillcolor: 'rgba(16, 185, 129, 0.12)',
+          line: { color: '#10b981', width: 1 }
+        });
+      });
+
+      (sr.resistance_zones || []).slice(0, 3).forEach(z => {
+        shapes.push({
+          type: 'rect', xref: 'paper', yref: 'y1',
+          x0: 0, x1: 1,
+          y0: z.lower_boundary, y1: z.upper_boundary,
+          fillcolor: 'rgba(239, 68, 68, 0.12)',
+          line: { color: '#ef4444', width: 1 }
+        });
+      });
+
+      // Annotations for Candlestick Patterns
+      const annotations = [];
+      (candles || []).slice(-6).forEach(cp => {
+        const isBull = cp.bias.includes('Bullish');
+        annotations.push({
+          x: cp.date,
+          y: cp.price,
+          yref: 'y1',
+          text: `🕯️ ${cp.pattern}`,
+          showarrow: true,
+          arrowhead: 2,
+          arrowcolor: isBull ? '#10b981' : '#ef4444',
+          ay: isBull ? -35 : 35,
+          bgcolor: '#111827',
+          bordercolor: isBull ? '#10b981' : '#ef4444',
+          font: { size: 9, color: '#f8fafc' }
+        });
+      });
+
+      const layout = {
+        template: 'plotly_dark',
+        paper_bgcolor: '#0f172a',
+        plot_bgcolor: '#080c14',
+        margin: { l: 45, r: 45, t: 30, b: 30 },
+        grid: { rows: 3, columns: 1, pattern: 'independent', roworder: 'top to bottom' },
+        xaxis: { rangeslider: { visible: false }, gridcolor: '#1e293b' },
+        yaxis: { domain: [0.42, 1.0], gridcolor: '#1e293b', title: 'Price' },
+        yaxis2: { domain: [0.22, 0.38], gridcolor: '#1e293b', title: 'Volume' },
+        yaxis3: { domain: [0.0, 0.18], gridcolor: '#1e293b', title: 'RSI (14)', range: [0, 100] },
+        shapes: shapes,
+        annotations: annotations,
+        legend: { orientation: 'h', y: 1.04, x: 1, xanchor: 'right', font: { size: 10 } }
+      };
+
+      Plotly.newPlot('plotlyChartContainer', traces, layout, { responsive: true, displayModeBar: false });
+    }
+
+    function exportOhlcCSV() {
+      if (!currentAnalysisData || !currentAnalysisData.ohlc_metrics.recent_ohlc_table) return;
+      const rows = currentAnalysisData.ohlc_metrics.recent_ohlc_table;
+      let csv = 'Date,Open,High,Low,Close,Volume,DailyReturnPct,OpeningGapPct,IntradayRangePct,RVOL\n';
+      rows.forEach(r => {
+        csv += `${r.date},${r.open},${r.high},${r.low},${r.close},${r.volume},${r.daily_return_pct},${r.opening_gap_pct},${r.intraday_range_pct},${r.rvol}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentAnalysisData.symbol}_ohlc.csv`;
+      a.click();
+    }
+
+    // Auto-load on page ready
+    window.addEventListener('DOMContentLoaded', () => {
+      loadAnalysis();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSE Stock Sorter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">NSE</span>
+      <span class="brand-name">Stock Sorter</span>
+    </div>
+    <div class="status">
+      <span id="marketDot" class="dot"></span>
+      <span id="marketState">checking market hours…</span>
+      <span class="sep">•</span>
+      <span id="clock">--:--:--</span>
+      <a href="{{ url_for('advanced') }}" target="_blank" class="refresh-btn" style="margin-left: 1rem; text-decoration: none; background: linear-gradient(135deg, #1e3a8a, #2563eb); border-color: #60a5fa; color: #fff; font-weight: 600;">🛡️ StockSentry AI</a>
+    </div>
+  </header>
+
+  <div class="ticker-wrap" aria-hidden="true">
+    <div class="ticker-track" id="tickerTrack">
+      <span class="ticker-empty">Loading market data…</span>
+    </div>
+  </div>
+
+  <main class="content">
+    <div class="controls">
+      <div class="control-group">
+        <label for="universeSelect">Universe</label>
+        <select id="universeSelect">
+          <option value="combined" selected>All Combined (NSE + BSE + ETFs)</option>
+          <option value="nifty50">Nifty 50</option>
+          <option value="all">All NSE-listed</option>
+          <option value="nse_etf">NSE Exchange Traded Funds (ETFs)</option>
+          <option value="bse_all">All BSE-listed</option>
+        </select>
+      </div>
+
+      <div class="control-group grow">
+        <label for="searchInput">Filter</label>
+        <input id="searchInput" type="text" placeholder="Search symbol or company name…" autocomplete="off">
+      </div>
+
+      <button id="refreshBtn" class="refresh-btn">
+        <span class="refresh-icon">↻</span> Refresh
+      </button>
+    </div>
+
+    <div class="meta-row">
+      <span id="countLabel">—</span>
+      <span id="updatedLabel"></span>
+    </div>
+
+    <div class="table-wrap">
+      <table id="stockTable">
+        <thead>
+          <tr>
+            <th data-key="symbol" class="sortable">Symbol <span class="arrow"></span></th>
+            <th data-key="name" class="sortable">Company <span class="arrow"></span></th>
+            <th data-key="exchange" class="sortable">Exchange <span class="arrow"></span></th>
+            <th data-key="price" class="sortable num default-sort">Price (₹) <span class="arrow"></span></th>
+            <th data-key="change" class="sortable num">Change <span class="arrow"></span></th>
+            <th data-key="change_pct" class="sortable num">Change % <span class="arrow"></span></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="6" class="loading-row">Loading stocks…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="footnote">
+      Prices via Yahoo Finance (delayed). Click any column header to sort ascending / descending. Data cached for 15 minutes per universe — use Refresh to force a re-fetch.
+    </p>
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
