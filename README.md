@@ -23,30 +23,14 @@ StockSentry AI is accessed directly by clicking the **"🛡️ StockSentry AI"**
 
 ---
 
-## 🚀 Quickstart
+## 🌐 Live Web Application
 
-### 1. Installation
-```bash
-# Activate virtual environment
-.\.venv\Scripts\activate
+The application is deployed live on Embarko:
 
-# Install dependencies
-pip install -r requirements.txt
-```
+**🔗 [https://nse-stock-sorter.embarko.app](https://nse-stock-sorter.embarko.app)**
 
-### 2. Running the Web Application
-```bash
-python app.py
-```
-Open **http://127.0.0.1:5000** in your browser:
-- Main Table: Browse and sort NSE / BSE / ETF equities.
-- Top Right Button: Click **"🛡️ StockSentry AI"** to open the full quantitative analysis terminal at **http://127.0.0.1:5000/advanced**.
-
-### 3. Running the Standalone Streamlit Dashboard
-```bash
-streamlit run streamlit_app.py
-```
-Or click the **"🚀 Open Streamlit Studio"** button directly from inside the `/advanced` terminal topbar.
+- **Main Stock Sorter**: Browse, search, and sort NSE, BSE, and ETF equities live with real-time price caching.
+- **StockSentry AI Terminal**: Access the advanced quantitative analysis and chart pattern workstation at **[https://nse-stock-sorter.embarko.app/advanced](https://nse-stock-sorter.embarko.app/advanced)** (or click the **"🛡️ StockSentry AI"** button in the top navigation).
 
 ---
 
